@@ -1,0 +1,21 @@
+DECLARE
+TYPE fnamesarray IS VARRAY(6) OF VARCHAR2(20);
+fnames fnamesarray; 
+TYPE lnamesarray IS VARRAY(6) OF VARCHAR2(20);
+lnames lnamesarray; 
+TYPE emailsarray IS VARRAY(6) OF VARCHAR2(20);
+emails emailsarray; 
+TYPE telarray IS VARRAY(6) OF VARCHAR2(20);
+tels telarray; 
+BEGIN
+fnames := fnamesarray('Georgi', 'Ivan', 'Qvor', 'Antonio', 'Borislav', 'Delyan'); 
+lnames := lnamesarray('Georgiev', 'Kirov', 'Panchev', 'Zografsky', 'Radoslavov', 'Sarafov'); 
+emails := emailsarray('1@random.com', '2@random.com', '3@random.com', '4@random.com', '5@random.com', '6@random.com'); 
+tels := telarray('1231', '1232', '1233', '1234', '1235', '1236'); 
+FOR i IN 1..6
+LOOP
+INSERT INTO CLIENT (ID, FNAME, LNAME, EMAIL, TEL_NUM) 
+  values (1000000000 + i, fnames(i), lnames(i), emails(i), tels(i)); 
+END LOOP;
+DBMS_OUTPUT.PUT_LINE('CLIENTS INSERTED!');
+END;
