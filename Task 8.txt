@@ -1,0 +1,237 @@
+CREATE OR REPLACE PACKAGE MANAGE_VEHICLE_RESERVATION
+
+FUNCTION vehicle_res_number(vehicleid NUMBER);
+PROCEDURE is_vehicle_reserved(vehicleid NUMBER, starttime TIMESTAMP, endtime TIMESTAMP);
+PROCEDURE max_res_client;
+FUNCTION random_uuid;
+FUNCTION v_type_exists(v_type VARCHAR2);
+FUNCTION v_type_counter(v_type_name VARCHAR2);
+FUNCTION preferred_vehichle_type (v_type_one VARCHAR2, v_type_two VARCHAR2);
+FUNCTION is_v_reserved(vehicleid NUMBER, starttime TIMESTAMP, endtime TIMESTAMP);
+PROCEDURE reserve_vehicle(v_id NUMBER, c_id NUMBER, d_from TIMESTAMP, d_to TIMESTAMP);
+PROCEDURE most_reserved_type_by_client(c_id NUMBER); 
+
+END MANAGE_VEHICLE_RESERVATION;
+
+CREATE OR REPLACE PACKAGE BODY MANAGE_VEHICLE_RESERVATION AS 
+
+FUNCTION vehicle_res_number(vehicleid NUMBER)
+RETURN NUMBER
+IS
+ id_found BOOLEAN := FALSE;
+ resnum NUMBER;
+ CURSOR VEHICLES IS SELECT * FROM VEHICLE;
+ INVALID_ID EXCEPTION;
+ NO_SUCH_ID EXCEPTION;
+BEGIN
+BEGIN
+ IF vehicleid < 0 THEN
+  RAISE INVALID_ID;
+ END IF;
+ FOR REC IN VEHICLES LOOP
+  IF REC.ID = vehicleid THEN
+   id_found := TRUE;
+   EXIT;
+  END IF;
+ END LOOP;
+ IF id_found = FALSE THEN
+  RAISE NO_SUCH_ID;
+ END IF;
+ SELECT COUNT(VEHICLE_ID) INTO resnum
+ FROM VEHICLE_RESERVATION
+ WHERE VEHICLE_ID = vehicleid;
+ EXCEPTION
+  WHEN INVALID_ID THEN
+   DBMS_OUTPUT.PUT_LINE('Vehicle id is invalid!');
+  WHEN NO_SUCH_ID THEN
+   DBMS_OUTPUT.PUT_LINE('Vehicle id does not exist!');
+ END;
+ RETURN resnum;
+END;
+
+PROCEDURE is_vehicle_reserved(vehicleid NUMBER, starttime TIMESTAMP, endtime TIMESTAMP)
+IS
+counter NUMBER;
+INVALID_INPUT_PARAMETERS EXCEPTION;
+BEGIN
+ IF starttime >= endtime THEN
+  RAISE INVALID_INPUT_PARAMETERS;
+ END IF;
+ SELECT COUNT(*) INTO counter FROM VEHICLE_RESERVATION 
+ WHERE VEHICLE_ID = vehicleid 
+ AND ((DATE_FROM = starttime AND DATE_TO = endtime) OR
+      (DATE_FROM > starttime AND DATE_TO < endtime) OR
+      (DATE_FROM <= starttime AND DATE_TO > starttime AND DATE_TO < endtime) OR
+      (DATE_FROM >= starttime AND DATE_FROM < endtime AND DATE_TO >= endtime) OR
+      (DATE_FROM > starttime AND DATE_TO > endtime));
+ IF counter != 0 THEN
+  DBMS_OUTPUT.PUT_LINE(vehicleid || ' is already reserved');
+ ELSE
+  DBMS_OUTPUT.PUT_LINE(vehicleid || ' is free');
+ END IF;
+ EXCEPTION 
+  WHEN INVALID_INPUT_PARAMETERS THEN
+   DBMS_OUTPUT.PUT_LINE('Invalid input parameters');
+END;
+
+PROCEDURE max_res_client
+IS
+counter NUMBER := 0;
+currRes NUMBER;
+cl_name CLIENT.FNAME%TYPE;
+CURSOR CLS IS SELECT * FROM CLIENT;
+BEGIN
+FOR rec IN CLS LOOP
+  SELECT COUNT(CLIENT_ID) INTO currRes FROM VEHICLE_RESERVATION WHERE CLIENT_ID = rec.ID;
+  IF currRes > counter THEN
+    counter := currRes;
+    cl_name := rec.FNAME;
+  END IF;
+END LOOP; 
+DBMS_OUTPUT.PUT_LINE('Client ' || cl_name || ' has reserved the most. Total number of reservation is ' || counter);
+END;
+
+FUNCTION random_uuid RETURN VARCHAR2 
+IS
+  v_uuid VARCHAR2(40);
+BEGIN
+  SELECT regexp_replace(rawtohex(sys_guid()), '([A-F0-9]{8})([A-F0-9]{4})([A-F0-9]{4})([A-F0-9]{4})([A-F0-9]{12})', '\1-\2-\3-\4-\5') INTO v_uuid FROM dual;
+  RETURN v_uuid;
+END;
+
+FUNCTION v_type_exists(v_type VARCHAR2)
+RETURN BOOLEAN
+IS
+v_type_num NUMBER := 0;
+res BOOLEAN := FALSE;
+BEGIN
+SELECT COUNT(NAME) INTO v_type_num FROM VEHICLE_TYPE WHERE NAME = v_type;
+IF v_type_num > 0 THEN 
+res := TRUE;
+DBMS_OUTPUT.PUT_LINE('FOUND');
+END IF;
+RETURN res;
+END;
+
+FUNCTION v_type_counter(v_type_name VARCHAR2)
+RETURN NUMBER
+IS
+res NUMBER := 0;
+BEGIN
+SELECT COUNT(vr.ID) INTO res
+FROM VEHICLE_RESERVATION vr 
+INNER JOIN VEHICLE v ON vr.VEHICLE_ID = v.ID 
+INNER JOIN VEHICLE_TYPE vt ON v.VEHICLE_TYPE = vt.ID
+WHERE vt.NAME = v_type_name;
+RETURN res;
+END;
+
+FUNCTION preferred_vehichle_type (v_type_one VARCHAR2, v_type_two VARCHAR2)
+RETURN VARCHAR2
+IS
+one_found BOOLEAN := FALSE;
+two_found BOOLEAN := FALSE;
+count_one NUMBER := 0;
+count_two NUMBER := 0;
+dif NUMBER := 0;
+res VARCHAR2(100) := '';
+BEGIN
+one_found := v_type_exists(v_type_one);
+two_found := v_type_exists(v_type_two);
+IF one_found = FALSE OR two_found = FALSE THEN
+RETURN 'Invalid vehicle type entered!';
+END IF;
+count_one := v_type_counter(v_type_one);
+count_two := v_type_counter(v_type_two);
+IF count_one > count_two THEN
+dif := count_one - count_two;
+res := 'Type ' || v_type_one || ' has ' || dif || ' more reservations than type ' || v_type_two;
+ELSIF count_one < count_two THEN
+dif := count_two - count_one;
+res := 'Type ' || v_type_two || ' has ' || dif || ' more reservations than type ' || v_type_one;
+ELSIF count_one = count_two THEN
+res := 'Types are equally preferred!';
+END IF; 
+RETURN res;
+END;
+BEGIN
+DBMS_OUTPUT.PUT_LINE(preferred_vehichle_type('SUV', 'CAR'));
+END;
+
+FUNCTION is_v_reserved(vehicleid NUMBER, starttime TIMESTAMP, endtime TIMESTAMP)
+RETURN BOOLEAN
+IS
+res BOOLEAN := FALSE;
+counter NUMBER;
+BEGIN
+ IF starttime <= endtime THEN
+SELECT COUNT(*) INTO counter FROM VEHICLE_RESERVATION 
+ WHERE VEHICLE_ID = vehicleid 
+ AND ((DATE_FROM = starttime AND DATE_TO = endtime) OR
+      (DATE_FROM > starttime AND DATE_TO < endtime) OR
+      (DATE_FROM <= starttime AND DATE_TO > starttime AND DATE_TO < endtime) OR
+      (DATE_FROM >= starttime AND DATE_FROM < endtime AND DATE_TO >= endtime) OR
+      (DATE_FROM > starttime AND DATE_TO > endtime));
+ IF counter != 0 THEN
+  DBMS_OUTPUT.PUT_LINE(vehicleid || ' is already reserved');
+  res := TRUE;
+ ELSE
+  DBMS_OUTPUT.PUT_LINE(vehicleid || ' is free');
+  res := FALSE;
+ END IF;
+ ELSE
+   DBMS_OUTPUT.PUT_LINE('Invalid input parameters');
+  res := FALSE;
+ END IF;
+ 
+RETURN res;
+END;
+
+PROCEDURE reserve_vehicle(v_id NUMBER, c_id NUMBER, d_from TIMESTAMP, d_to TIMESTAMP)
+IS
+v_reserved BOOLEAN := FALSE;
+BEGIN
+v_reserved := is_v_reserved(v_id, d_from, d_to);
+IF v_reserved = FALSE THEN
+INSERT INTO VEHICLE_RESERVATION (VEHICLE_ID, CLIENT_ID, DATE_FROM, DATE_TO) VALUES (v_id, c_id, d_from, d_to);
+DBMS_OUTPUT.PUT_LINE('Insert successful!');
+ELSE
+DBMS_OUTPUT.PUT_LINE('Exiting!');
+END IF;
+END;
+
+PROCEDURE most_reserved_type_by_client(c_id NUMBER)
+IS
+m_type NUMBER := 0;
+counter NUMBER := 0;
+currRecRes Number := 0;
+c_name VARCHAR2(100);
+v_name VARCHAR2(100);
+CURSOR reserv IS SELECT vr.CLIENT_ID, v.VEHICLE_TYPE FROM VEHICLE_RESERVATION vr INNER JOIN VEHICLE v ON v.ID = vr.VEHICLE_ID WHERE CLIENT_ID = c_id;
+BEGIN
+FOR rec IN reserv LOOP
+  SELECT COUNT(vr.ID) INTO currRecRes
+  FROM VEHICLE_RESERVATION vr
+  INNER JOIN VEHICLE v ON v.ID = vr.VEHICLE_ID
+  WHERE vr.CLIENT_ID = rec.CLIENT_ID 
+  AND v.VEHICLE_TYPE = rec.VEHICLE_TYPE;
+  
+  IF counter < currRecRes THEN
+   counter := currRecRes;
+   m_type := rec.VEHICLE_TYPE;
+  END IF;
+END LOOP;
+SELECT NAME INTO v_name
+FROM VEHICLE_TYPE
+WHERE ID = m_type;
+SELECT FNAME INTO c_name
+FROM CLIENT
+WHERE ID = c_id;
+DBMS_OUTPUT.PUT_LINE('Vehicle type ' || v_name || ' is most reserved by client ' || c_name);
+END;
+
+END MANAGE_VEHICLE_RESERVATION;
+
+BEGIN
+ MANAGE_VEHICLE_RESERVATION.max_res_client;
+END;
