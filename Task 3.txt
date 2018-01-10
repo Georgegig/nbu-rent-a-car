@@ -1,0 +1,20 @@
+CREATE OR REPLACE PROCEDURE max_res_client
+IS
+counter NUMBER := 0;
+currRes NUMBER;
+cl_name CLIENT.FNAME%TYPE;
+CURSOR CLS IS SELECT * FROM CLIENT;
+BEGIN
+FOR rec IN CLS LOOP
+  SELECT COUNT(CLIENT_ID) INTO currRes FROM VEHICLE_RESERVATION WHERE CLIENT_ID = rec.ID;
+  IF currRes > counter THEN
+    counter := currRes;
+    cl_name := rec.FNAME;
+  END IF;
+END LOOP; 
+DBMS_OUTPUT.PUT_LINE('Client ' || cl_name || ' has reserved the most. Total number of reservation is ' || counter);
+END;
+
+BEGIN
+max_res_client();
+END;

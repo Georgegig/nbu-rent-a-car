@@ -1,0 +1,32 @@
+CREATE OR REPLACE PROCEDURE is_vehicle_reserved(vehicleid NUMBER, starttime TIMESTAMP, endtime TIMESTAMP)
+IS
+counter NUMBER;
+INVALID_INPUT_PARAMETERS EXCEPTION;
+BEGIN
+ IF starttime >= endtime THEN
+  RAISE INVALID_INPUT_PARAMETERS;
+ END IF;
+ SELECT COUNT(*) INTO counter FROM VEHICLE_RESERVATION 
+ WHERE VEHICLE_ID = vehicleid 
+ AND ((DATE_FROM = starttime AND DATE_TO = endtime) OR
+      (DATE_FROM > starttime AND DATE_TO < endtime) OR
+      (DATE_FROM <= starttime AND DATE_TO > starttime AND DATE_TO < endtime) OR
+      (DATE_FROM >= starttime AND DATE_FROM < endtime AND DATE_TO >= endtime) OR
+      (DATE_FROM > starttime AND DATE_TO > endtime));
+ IF counter != 0 THEN
+  DBMS_OUTPUT.PUT_LINE(vehicleid || ' is already reserved');
+ ELSE
+  DBMS_OUTPUT.PUT_LINE(vehicleid || ' is free');
+ END IF;
+ EXCEPTION 
+  WHEN INVALID_INPUT_PARAMETERS THEN
+   DBMS_OUTPUT.PUT_LINE('Invalid input parameters');
+END;
+
+BEGIN 
+is_vehicle_reserved(2, '05-JAN-18 10.00', '05-JAN-18 11.00');
+END;
+
+BEGIN 
+is_vehicle_reserved(2, '05-JAN-18 10.00', '05-JAN-18 10.00');
+END;

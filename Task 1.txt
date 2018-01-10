@@ -1,0 +1,54 @@
+CREATE OR REPLACE FUNCTION vehicle_res_number(vehicleid NUMBER)
+RETURN NUMBER
+IS
+ id_found BOOLEAN := FALSE;
+ resnum NUMBER;
+ CURSOR VEHICLES IS SELECT * FROM VEHICLE;
+ INVALID_ID EXCEPTION;
+ NO_SUCH_ID EXCEPTION;
+BEGIN
+BEGIN
+ IF vehicleid < 0 THEN
+  RAISE INVALID_ID;
+ END IF;
+ FOR REC IN VEHICLES LOOP
+  IF REC.ID = vehicleid THEN
+   id_found := TRUE;
+   EXIT;
+  END IF;
+ END LOOP;
+ IF id_found = FALSE THEN
+  RAISE NO_SUCH_ID;
+ END IF;
+ SELECT COUNT(VEHICLE_ID) INTO resnum
+ FROM VEHICLE_RESERVATION
+ WHERE VEHICLE_ID = vehicleid;
+ EXCEPTION
+  WHEN INVALID_ID THEN
+   DBMS_OUTPUT.PUT_LINE('Vehicle id is invalid!');
+  WHEN NO_SUCH_ID THEN
+   DBMS_OUTPUT.PUT_LINE('Vehicle id does not exist!');
+ END;
+ RETURN resnum;
+END;
+
+DECLARE
+rescount NUMBER;
+BEGIN
+rescount := vehicle_res_number(13);
+DBMS_OUTPUT.PUT_LINE(rescount);
+END;
+
+DECLARE
+rescount NUMBER;
+BEGIN
+rescount := vehicle_res_number(-1);
+DBMS_OUTPUT.PUT_LINE(rescount);
+END;
+
+DECLARE
+rescount NUMBER;
+BEGIN
+rescount := vehicle_res_number(3);
+DBMS_OUTPUT.PUT_LINE(rescount);
+END;
