@@ -1,0 +1,87 @@
+CREATE OR REPLACE FUNCTION v_type_exists(v_type VARCHAR2)
+RETURN BOOLEAN
+IS
+v_type_num NUMBER := 0;
+res BOOLEAN := FALSE;
+BEGIN
+SELECT COUNT(NAME) INTO v_type_num FROM VEHICLE_TYPE WHERE NAME = v_type;
+IF v_type_num > 0 THEN 
+res := TRUE;
+DBMS_OUTPUT.PUT_LINE('FOUND');
+END IF;
+RETURN res;
+END;
+
+DECLARE
+res BOOLEAN;
+BEGIN
+res := v_type_exists('SUV'); 
+END;
+
+CREATE OR REPLACE FUNCTION v_type_counter(v_type_name VARCHAR2)
+RETURN NUMBER
+IS
+res NUMBER := 0;
+BEGIN
+SELECT COUNT(vr.ID) INTO res
+FROM VEHICLE_RESERVATION vr 
+INNER JOIN VEHICLE v ON vr.VEHICLE_ID = v.ID 
+INNER JOIN VEHICLE_TYPE vt ON v.VEHICLE_TYPE = vt.ID
+WHERE vt.NAME = v_type_name;
+RETURN res;
+END;
+
+BEGIN
+DBMS_OUTPUT.PUT_LINE(v_type_counter('CAR'));
+END;
+
+CREATE OR REPLACE FUNCTION preferred_vehichle_type (v_type_one VARCHAR2, v_type_two VARCHAR2)
+RETURN VARCHAR2
+IS
+one_found BOOLEAN := FALSE;
+two_found BOOLEAN := FALSE;
+count_one NUMBER := 0;
+count_two NUMBER := 0;
+dif NUMBER := 0;
+res VARCHAR2(100) := '';
+BEGIN
+one_found := v_type_exists(v_type_one);
+two_found := v_type_exists(v_type_two);
+IF one_found = FALSE OR two_found = FALSE THEN
+RETURN 'Invalid vehicle type entered!';
+END IF;
+count_one := v_type_counter(v_type_one);
+count_two := v_type_counter(v_type_two);
+IF count_one > count_two THEN
+dif := count_one - count_two;
+res := 'Type ' || v_type_one || ' has ' || dif || ' more reservations than type ' || v_type_two;
+ELSIF count_one < count_two THEN
+dif := count_two - count_one;
+res := 'Type ' || v_type_two || ' has ' || dif || ' more reservations than type ' || v_type_one;
+ELSIF count_one = count_two THEN
+res := 'Types are equally preferred!';
+END IF; 
+RETURN res;
+END;
+
+BEGIN
+DBMS_OUTPUT.PUT_LINE(preferred_vehichle_type('CAR','SUV'));
+END;
+
+BEGIN
+DBMS_OUTPUT.PUT_LINE(preferred_vehichle_type('SUV','CAR'));
+END;
+
+BEGIN
+DBMS_OUTPUT.PUT_LINE(preferred_vehichle_type('CAR','A'));
+END;
+
+SELECT * FROM VEHICLE_RESERVATION;
+SELECT * FROM VEHICLE;
+SELECT * FROM VEHICLE_TYPE;
+
+SELECT COUNT(vr.ID)
+FROM VEHICLE_RESERVATION vr 
+INNER JOIN VEHICLE v ON vr.VEHICLE_ID = v.ID 
+INNER JOIN VEHICLE_TYPE vt ON v.VEHICLE_TYPE = vt.ID
+WHERE vt.NAME = 'CAR';
