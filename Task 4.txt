@@ -1,0 +1,23 @@
+CREATE or REPLACE FUNCTION random_uuid RETURN VARCHAR2 
+IS
+  v_uuid VARCHAR2(40);
+BEGIN
+  SELECT regexp_replace(rawtohex(sys_guid()), '([A-F0-9]{8})([A-F0-9]{4})([A-F0-9]{4})([A-F0-9]{4})([A-F0-9]{12})', '\1-\2-\3-\4-\5') INTO v_uuid FROM dual;
+  RETURN v_uuid;
+END;
+
+CREATE OR REPLACE TRIGGER gen_res_id
+BEFORE INSERT
+ON VEHICLE_RESERVATION
+FOR EACH ROW
+DECLARE
+random_id VARCHAR2(40);
+BEGIN
+  random_id := random_uuid();
+  :NEW.ID := random_id;
+END;
+
+INSERT INTO VEHICLE_RESERVATION (VEHICLE_ID, CLIENT_ID, DATE_FROM, DATE_TO)
+VALUES (1, 1000000001, '07-JAN-18 10.00', '09-JAN-18 10.00');
+
+SELECT * FROM VEHICLE_RESERVATION;
