@@ -1,0 +1,33 @@
+CREATE OR REPLACE PROCEDURE most_reserved_type_by_client(c_id NUMBER)
+IS
+m_type NUMBER := 0;
+counter NUMBER := 0;
+currRecRes Number := 0;
+c_name VARCHAR2(100);
+v_name VARCHAR2(100);
+CURSOR reserv IS SELECT vr.CLIENT_ID, v.VEHICLE_TYPE FROM VEHICLE_RESERVATION vr INNER JOIN VEHICLE v ON v.ID = vr.VEHICLE_ID WHERE CLIENT_ID = c_id;
+BEGIN
+FOR rec IN reserv LOOP
+  SELECT COUNT(vr.ID) INTO currRecRes
+  FROM VEHICLE_RESERVATION vr
+  INNER JOIN VEHICLE v ON v.ID = vr.VEHICLE_ID
+  WHERE vr.CLIENT_ID = rec.CLIENT_ID 
+  AND v.VEHICLE_TYPE = rec.VEHICLE_TYPE;
+  
+  IF counter < currRecRes THEN
+   counter := currRecRes;
+   m_type := rec.VEHICLE_TYPE;
+  END IF;
+END LOOP;
+SELECT NAME INTO v_name
+FROM VEHICLE_TYPE
+WHERE ID = m_type;
+SELECT FNAME INTO c_name
+FROM CLIENT
+WHERE ID = c_id;
+DBMS_OUTPUT.PUT_LINE('Vehicle type ' || v_name || ' is most reserved by client ' || c_name);
+END;
+
+BEGIN
+most_reserved_type_by_client(1000000002);
+END;

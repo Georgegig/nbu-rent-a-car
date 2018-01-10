@@ -1,0 +1,46 @@
+CREATE OR REPLACE FUNCTION is_v_reserved(vehicleid NUMBER, starttime TIMESTAMP, endtime TIMESTAMP)
+RETURN BOOLEAN
+IS
+res BOOLEAN := FALSE;
+counter NUMBER;
+BEGIN
+ IF starttime <= endtime THEN
+SELECT COUNT(*) INTO counter FROM VEHICLE_RESERVATION 
+ WHERE VEHICLE_ID = vehicleid 
+ AND ((DATE_FROM = starttime AND DATE_TO = endtime) OR
+      (DATE_FROM > starttime AND DATE_TO < endtime) OR
+      (DATE_FROM <= starttime AND DATE_TO > starttime AND DATE_TO < endtime) OR
+      (DATE_FROM >= starttime AND DATE_FROM < endtime AND DATE_TO >= endtime) OR
+      (DATE_FROM > starttime AND DATE_TO > endtime));
+ IF counter != 0 THEN
+  DBMS_OUTPUT.PUT_LINE(vehicleid || ' is already reserved');
+  res := TRUE;
+ ELSE
+  DBMS_OUTPUT.PUT_LINE(vehicleid || ' is free');
+  res := FALSE;
+ END IF;
+ ELSE
+   DBMS_OUTPUT.PUT_LINE('Invalid input parameters');
+  res := FALSE;
+ END IF;
+ 
+RETURN res;
+END;
+
+
+CREATE OR REPLACE PROCEDURE reserve_vehicle(v_id NUMBER, c_id NUMBER, d_from TIMESTAMP, d_to TIMESTAMP)
+IS
+v_reserved BOOLEAN := FALSE;
+BEGIN
+v_reserved := is_v_reserved(v_id, d_from, d_to);
+IF v_reserved = FALSE THEN
+INSERT INTO VEHICLE_RESERVATION (VEHICLE_ID, CLIENT_ID, DATE_FROM, DATE_TO) VALUES (v_id, c_id, d_from, d_to);
+DBMS_OUTPUT.PUT_LINE('Insert successful!');
+ELSE
+DBMS_OUTPUT.PUT_LINE('Exiting!');
+END IF;
+END;
+
+BEGIN
+reserve_vehicle(3, 1000000005, '08-JAN-18 10.00', '09-JAN-18 12.00');
+END;
