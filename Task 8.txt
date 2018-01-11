@@ -1,13 +1,13 @@
-CREATE OR REPLACE PACKAGE MANAGE_VEHICLE_RESERVATION
+CREATE OR REPLACE PACKAGE MANAGE_VEHICLE_RESERVATION AS
 
-FUNCTION vehicle_res_number(vehicleid NUMBER);
+FUNCTION vehicle_res_number(vehicleid NUMBER) RETURN NUMBER;
 PROCEDURE is_vehicle_reserved(vehicleid NUMBER, starttime TIMESTAMP, endtime TIMESTAMP);
 PROCEDURE max_res_client;
-FUNCTION random_uuid;
-FUNCTION v_type_exists(v_type VARCHAR2);
-FUNCTION v_type_counter(v_type_name VARCHAR2);
-FUNCTION preferred_vehichle_type (v_type_one VARCHAR2, v_type_two VARCHAR2);
-FUNCTION is_v_reserved(vehicleid NUMBER, starttime TIMESTAMP, endtime TIMESTAMP);
+FUNCTION random_uuid RETURN VARCHAR2;
+FUNCTION v_type_exists(v_type VARCHAR2) RETURN BOOLEAN;
+FUNCTION v_type_counter(v_type_name VARCHAR2) RETURN NUMBER;
+FUNCTION preferred_vehichle_type (v_type_one VARCHAR2, v_type_two VARCHAR2) RETURN VARCHAR2;
+FUNCTION is_v_reserved(vehicleid NUMBER, starttime TIMESTAMP, endtime TIMESTAMP) RETURN BOOLEAN;
 PROCEDURE reserve_vehicle(v_id NUMBER, c_id NUMBER, d_from TIMESTAMP, d_to TIMESTAMP);
 PROCEDURE most_reserved_type_by_client(c_id NUMBER); 
 
