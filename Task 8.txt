@@ -1,16 +1,14 @@
 CREATE OR REPLACE PACKAGE MANAGE_VEHICLE_RESERVATION AS
-
 FUNCTION vehicle_res_number(vehicleid NUMBER) RETURN NUMBER;
 PROCEDURE is_vehicle_reserved(vehicleid NUMBER, starttime TIMESTAMP, endtime TIMESTAMP);
 PROCEDURE max_res_client;
-FUNCTION random_uuid RETURN VARCHAR2;
+FUNCTION random_uuid  RETURN VARCHAR2;
 FUNCTION v_type_exists(v_type VARCHAR2) RETURN BOOLEAN;
 FUNCTION v_type_counter(v_type_name VARCHAR2) RETURN NUMBER;
 FUNCTION preferred_vehichle_type (v_type_one VARCHAR2, v_type_two VARCHAR2) RETURN VARCHAR2;
 FUNCTION is_v_reserved(vehicleid NUMBER, starttime TIMESTAMP, endtime TIMESTAMP) RETURN BOOLEAN;
 PROCEDURE reserve_vehicle(v_id NUMBER, c_id NUMBER, d_from TIMESTAMP, d_to TIMESTAMP);
-PROCEDURE most_reserved_type_by_client(c_id NUMBER); 
-
+PROCEDURE most_reserved_type_by_client(c_id NUMBER);
 END MANAGE_VEHICLE_RESERVATION;
 
 CREATE OR REPLACE PACKAGE BODY MANAGE_VEHICLE_RESERVATION AS 
@@ -91,7 +89,8 @@ END LOOP;
 DBMS_OUTPUT.PUT_LINE('Client ' || cl_name || ' has reserved the most. Total number of reservation is ' || counter);
 END;
 
-FUNCTION random_uuid RETURN VARCHAR2 
+FUNCTION random_uuid 
+RETURN VARCHAR2 
 IS
   v_uuid VARCHAR2(40);
 BEGIN
@@ -153,9 +152,6 @@ ELSIF count_one = count_two THEN
 res := 'Types are equally preferred!';
 END IF; 
 RETURN res;
-END;
-BEGIN
-DBMS_OUTPUT.PUT_LINE(preferred_vehichle_type('SUV', 'CAR'));
 END;
 
 FUNCTION is_v_reserved(vehicleid NUMBER, starttime TIMESTAMP, endtime TIMESTAMP)
